@@ -2,7 +2,6 @@
 
 __sfr __at 0x80 LED;
 __sfr __at 0x90 NUM;
-__sfr __at 0xa0 BLINK;
 
 __sbit __at 0x80 LED1;
 
@@ -72,10 +71,11 @@ unsigned char left_right;
 unsigned char sun_show_it;
 
 void timer_init(void);
-void blink_led(void);
 void display_sun(unsigned int show_num);
-void pass_30_s(void);
 void my_pwm(void);
+void pass_30_s(void);
+void delay_1ms(void);
+
 
 void main(void)
 {
@@ -84,9 +84,8 @@ void main(void)
 	TH0 = 6;
 	timer_init();
 	for (;;) {
-
-		display_sun(tomato_time);
 		pass_30_s();
+		display_sun(tomato_time);
 	}
 
 }
@@ -118,7 +117,16 @@ void timer_interrupt(void) __interrupt(1)
 				tomato_time = backet[current_tomato];
 
 				blink_enable = 1;
-				//blink_led();
+				delay_1ms();
+				P3_7 = 1;
+				delay_1ms();
+				P3_7 = 0;
+				delay_1ms();
+				P3_7 = 1;
+
+                TL0 = 6;
+                TH0 = 6;
+                timer_init();
 
 			}
 		}		// one minute' for loop
@@ -151,28 +159,9 @@ void display_sun(unsigned int show_num)
 	++left_right;
 }
 
-void pass_30_s(void)
-{
-	LED = ~buffer;
-	OFF(BLINK);
-}
 
-void blink_led(void)
-{
-	if (blink_enable == 1) {
 
-		if (blink_count >= BLINK_TIMES) {
-			blink_enable = 0;
-			//     LED = 0xff;
-		}
-		blink_count++;
 
-		BLINK = ~BLINK;
-	} else {
-		OFF(BLINK);
-	}
-
-}
 
 void my_pwm(void)
 {
@@ -210,4 +199,25 @@ void my_pwm(void)
 		}
 	}
 
+}
+
+void pass_30_s(void)
+{
+	LED = ~buffer;
+}
+
+void delay_1ms()
+{  int  i;
+   TMOD &= 0x0f;
+ 
+   TMOD |= 0x10;                 
+   for(i=0;i<10;i++)             
+    {
+      TH0 = (65536-1000) / 256; 
+      TL0 = (65536-1000) % 256;
+      TR1 = 1;                  
+      while(TF1 == 0);      
+      TF1 = 0;              
+      TR1 = 0;                  
+    }
 }
